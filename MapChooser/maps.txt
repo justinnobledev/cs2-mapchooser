@@ -1,4 +1,3 @@
-﻿ws:surf_beginner
-ws:surf_utopia_njv
-ws:surf_mesa_revo_cybershoke
-ws:surf_kitsune
+﻿de_dust2
+cs_offfice
+de_inferno
