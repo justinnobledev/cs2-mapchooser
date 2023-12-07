@@ -37,9 +37,9 @@ public class Config
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
-    public override string ModuleVersion { get; } = "1.2";
+    public override string ModuleVersion { get; } = "1.2.1";
     public override string ModuleDescription { get; } = "Handles map voting and map changing";
-    public override string ModuleAuthor { get; } = "Retro";
+    public override string ModuleAuthor { get; } = "Retro - https://insanitygaming.net/";
 
     private double _startTime = 0f;
     private ConVar? _timeLimitConVar = null;
