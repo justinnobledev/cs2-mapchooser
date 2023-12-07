@@ -17,20 +17,20 @@ namespace MapChooser;
 
 public class Config
 {
-    public float VoteStartTime = 3.0f;
-    public bool AllowExtend = true;
-    public float ExtendTimeStep = 10f;
-    public int ExtendLimit = 3;
-    public int ExcludeMaps = 0;
-    public int IncludeMaps = 5;
-    public bool IncludeCurrent = false;
-    public bool DontChangeRtv = true;
-    public float VoteDuration = 15f;
-    public bool RunOfFVote = true;
-    public float VotePercent = 0.6f;
-    public bool IgnoreSpec = true;
-    public float RtvPercent = 0.6f;
-    public float RtvDelay = 3.0f;
+    public float VoteStartTime { get; set; } = 3.0f;
+    public bool AllowExtend { get; set; } = true;
+    public float ExtendTimeStep { get; set; } = 10f;
+    public int ExtendLimit { get; set; } = 3;
+    public int ExcludeMaps { get; set; } = 0;
+    public int IncludeMaps { get; set; } = 5;
+    public bool IncludeCurrent { get; set; } = false;
+    public bool DontChangeRtv { get; set; } = true;
+    public float VoteDuration { get; set; } = 15f;
+    public bool RunOfFVote { get; set; } = true;
+    public float VotePercent { get; set; } = 0.6f;
+    public bool IgnoreSpec { get; set; } = true;
+    public float RtvPercent { get; set; } = 0.6f;
+    public float RtvDelay { get; set; } = 3.0f;
 }
 
 [MinimumApiVersion(61)]
