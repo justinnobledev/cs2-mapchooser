@@ -33,6 +33,10 @@ This plugin requires at least API version `61`
 ---
 ## Changelog
 ```
+1.2.2
+Fixed finding mp_match_restart_delay - criskkky
+1.2.1
+Fixed Config loading
 1.2
 Fixed event hooking so the map should end at the correct time.
 Use TerminateRound method to end the round instead of killing everyone.
