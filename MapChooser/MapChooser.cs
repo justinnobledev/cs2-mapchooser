@@ -28,6 +28,7 @@ public class Config
     public bool RunOfFVote { get; set; } = true;
     public float VotePercent { get; set; } = 0.6f;
     public bool IgnoreSpec { get; set; } = true;
+    public bool AllowRtv { get; set; } = true;
     public float RtvPercent { get; set; } = 0.6f;
     public float RtvDelay { get; set; } = 3.0f;
 }
@@ -36,7 +37,7 @@ public class Config
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
-    public override string ModuleVersion { get; } = "1.2.2";
+    public override string ModuleVersion { get; } = "1.2.3";
     public override string ModuleDescription { get; } = "Handles map voting and map changing";
     public override string ModuleAuthor { get; } = "Retro - https://insanitygaming.net/";
 
@@ -130,6 +131,8 @@ public class MapChooser : BasePlugin
     [CommandHelper(whoCanExecute:CommandUsage.CLIENT_ONLY)]
     public void OnRtVCommand(CCSPlayerController? player, CommandInfo cmd)
     {
+        if (!_config.AllowRtv)
+            return;
         if (!_canRtv)
         {
             cmd.ReplyToCommand(

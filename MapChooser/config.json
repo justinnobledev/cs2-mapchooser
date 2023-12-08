@@ -9,6 +9,7 @@
     "DontChangeRTV": true,
     "VoteDuration": 15.0,
     "IgnoreSpec": true,
+    "AllowRtv": true,
     "RTVPercent": 0.6,
     "RTVDelay": 3.0
 }
