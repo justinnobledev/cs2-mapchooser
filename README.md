@@ -29,10 +29,13 @@ This plugin requires at least API version `61`
 ## Future Plans
 - [ ] Force map vote admin command
 - [ ] Time left command
+- [ ] Implement max round for starting map vote
 
 ---
 ## Changelog
 ```
+1.2.3
+Added an AllowRtv option in the config to turn on and off rtv
 1.2.2
 Fixed finding mp_match_restart_delay - criskkky
 1.2.1
