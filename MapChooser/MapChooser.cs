@@ -418,7 +418,7 @@ public class MapChooser : BasePlugin
 
     public HookResult OnMatchEndEvent(EventCsWinPanelMatch @event, GameEventInfo info)
     {
-        var convar = ConVar.Find("mp_match_restart_dela");
+        var convar = ConVar.Find("mp_match_restart_delay");
         if (convar == null)
         {
             if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
