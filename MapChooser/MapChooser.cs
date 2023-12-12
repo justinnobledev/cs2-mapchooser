@@ -86,11 +86,11 @@ public class MapChooser : BasePlugin
         }
     }
 
-    private void Log(string message)
-    {
-        using var writer = new StreamWriter(Path.Combine(ModuleDirectory, "map_log.log"), append: true);
-        writer.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} {message}");
-    }
+    // private void Log(string message)
+    // {
+    //     using var writer = new StreamWriter(Path.Combine(ModuleDirectory, "map_log.log"), append: true);
+    //     writer.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} {message}");
+    // }
 
     private static string FormatTime(float timeF)
     {
@@ -339,7 +339,7 @@ public class MapChooser : BasePlugin
             _wasRtv = false;
             if (winner != "Dont Change")
             {
-                Log($"RTV successful changing map to {winner}");
+                // Log($"RTV successful changing map to {winner}");
                 if (_maps.Any(map => map.Trim() == "ws:" + winner))
                     Server.ExecuteCommand($"ds_workshop_changelevel {winner}");
                 else
@@ -366,7 +366,7 @@ public class MapChooser : BasePlugin
                 _nextMap = winner;
                 _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - Math.Min(_config.VoteDuration, 60f), () =>
                 {
-                    Log($"Map vote successful changing map to {winner}");
+                    // Log($"Map vote successful changing map to {winner}");
                     GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw);
                 }, TimerFlags.STOP_ON_MAPCHANGE);
             }
