@@ -204,6 +204,7 @@ public class MapChooser : BasePlugin
             return;
         }
         
+        //TODO: Inside this add a print to chat saying RTV is now enabled.
         AddTimer(_config.RtvDelay * 60f, () => _canRtv = true, TimerFlags.STOP_ON_MAPCHANGE);
 
         _startTime = Server.EngineTime;
