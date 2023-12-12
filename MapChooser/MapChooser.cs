@@ -33,7 +33,7 @@ public class Config
     public float RtvDelay { get; set; } = 3.0f;
 }
 
-[MinimumApiVersion(61)]
+[MinimumApiVersion(120)]
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
@@ -74,8 +74,6 @@ public class MapChooser : BasePlugin
         _mapsPath = Path.Combine(ModuleDirectory, "maps.txt");
         RegisterListener<Listeners.OnMapEnd>(OnMapEnd);
         RegisterListener<Listeners.OnMapStart>(OnMapStart);
-        RegisterListener<Listeners.OnServerHibernationUpdate>((hiberNating) =>
-            Console.WriteLine($"[Mapchooser] The server hibernation is now: {hiberNating}"));
 
         RegisterEventHandler<EventRoundStart>(EventOnRoundStart);
         RegisterEventHandler<EventCsWinPanelMatch>(OnMatchEndEvent);
