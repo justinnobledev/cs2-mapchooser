@@ -179,7 +179,7 @@ public class MapChooser : BasePlugin
                 {
                     _nominations[player.SteamID] = tmp;
                     Server.PrintToChatAll(
-                        $"{Localizer["mapchooser.prefiex"]} {Localizer["mapchooser.nominate", player.PlayerName, option.Text]}");
+                        $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.nominate", player.PlayerName, option.Text]}");
                 });
         }
         ChatMenus.OpenMenu(player, menu);
