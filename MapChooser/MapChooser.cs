@@ -299,16 +299,10 @@ public class MapChooser : BasePlugin
             });
         }
 
-        foreach (var player in Utilities.GetPlayers())
-        {
-            ChatMenus.OpenMenu(player, menu);
-            player.PrintToCenter(message.ToString());
-        }
-
         AddTimer(Math.Min(_config.VoteDuration, 60f), OnVoteFinished, TimerFlags.STOP_ON_MAPCHANGE);
     }
-    
-    public static CCSGameRules GetGameRules()
+
+    private static CCSGameRules GetGameRules()
     {
         return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
     }
@@ -430,7 +424,7 @@ public class MapChooser : BasePlugin
         }
         else
         {
-            AddTimer((float) Math.Min(convar.GetPrimitiveValue<float>(), convar.GetPrimitiveValue<float>() - 1.0), () =>
+            AddTimer((float) Math.Min(convar.GetPrimitiveValue<int>(), convar.GetPrimitiveValue<int>() - 1.0), () =>
             {
                 if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
                     Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
