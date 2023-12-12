@@ -1,0 +1,17 @@
+﻿{
+  "mapchooser.prefix": " {lightblue}[CSS]",
+  "mapchooser.vote_starting": "",
+  "mapchooser.rtv_vote_starting": "{lightred}RTV{default} balsošana ir sākusies",
+  "mapchooser.rtv_not_available": "{lightred}RTV{default} šobrīd nav pieejams.",
+  "mapchooser.unrtv": "{green}{0}{default} atsauca savu balsi par {green}rtv{default}[{1}/{2}].",
+  "mapchooser.nominate": "{green}{0}{default} Izvirzīja {green}{1}{default}.",
+  "mapchooser.nominate_header": "Nomināciju izvēlne - Raksti !# lai izvirzītu karti",
+  "mapchooser.nominate_current_map": "{0} - Šobrīd karte",
+  "mapchooser.nominate_recent": "{0} - Nesen spēlēta karte",
+  "mapchooser.nominate_nominated": "{0} - Karte jau ir izvirzīta",
+  "mapchooser.vote_header": "Balsošana par kartēm - raksti !# lai balsotu",
+  "mapchooser.option_dont_change": "Nemainīt",
+  "mapchooser.option_extend": "Pagarināt",
+  "mapchooser.voted_for": "{green}{0}{default} nobalsoja par {green}{1}{default}.",
+  "mapchooser.map_won": "{green}{0}{default} Tika izvēlēta kā nākamā karte"
+}
