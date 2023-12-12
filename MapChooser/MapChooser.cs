@@ -10,6 +10,7 @@ using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
+using Microsoft.Extensions.Logging;
 using Timer = CounterStrikeSharp.API.Modules.Timers.Timer;
 
 namespace MapChooser;
@@ -185,7 +186,6 @@ public class MapChooser : BasePlugin
     {
         if (_mapVoteTimer == null && !_voteActive && _nextMap == "")
         {
-            Console.WriteLine("Detected new map starting timer");
             SetupTimeLimitCountDown();
         }
 
@@ -197,12 +197,10 @@ public class MapChooser : BasePlugin
         _timeLimitConVar = ConVar.Find("mp_timelimit");
         if (_timeLimitConVar == null)
         {
-            Console.WriteLine("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
+            Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
             return;
         }
         
-        Console.WriteLine("[MapChooser] Setting up time limit countdown!");
-
         AddTimer(_config.RtvDelay * 60f, () => _canRtv = true, TimerFlags.STOP_ON_MAPCHANGE);
 
         _startTime = Server.EngineTime;
@@ -307,7 +305,6 @@ public class MapChooser : BasePlugin
 
     private void OnVoteFinished()
     {
-        Console.WriteLine("Map vote finished");
         _voteActive = false;
         if (_totalVotes == 0)
         {
@@ -355,7 +352,6 @@ public class MapChooser : BasePlugin
             {
                 _timeLimitConVar.SetValue(_timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep);
                 _extends++;
-                Console.WriteLine($"Extend won setting next vote time for {_config.ExtendTimeStep + (60 - Math.Min(_config.VoteDuration, 60f)) - (_config.VoteStartTime * 60f)}");
                 _mapVoteTimer = AddTimer(_config.ExtendTimeStep + (60 - Math.Min(_config.VoteDuration, 60f)) - (_config.VoteStartTime * 60f), StartMapVote,
                     TimerFlags.STOP_ON_MAPCHANGE);
             }
@@ -405,7 +401,6 @@ public class MapChooser : BasePlugin
         _config = JsonSerializer.Deserialize<Config>(json);
 
         _maps = new List<string>(File.ReadLines(_mapsPath));
-        Console.WriteLine(string.Join(", ", _maps.ToArray()));
         if (_mapHistory.Count > _config.ExcludeMaps)
             _mapHistory.RemoveAt(0);
     }
