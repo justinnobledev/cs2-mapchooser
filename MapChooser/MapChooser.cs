@@ -135,16 +135,17 @@ public class MapChooser : BasePlugin
         if (!_canRtv)
         {
             cmd.ReplyToCommand(
-                $" {ChatColors.LightRed}[IG] {ChatColors.LightRed}RTV{ChatColors.Default} is not currently avaliable.");
+                $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_not_available"]}");
             return;
         }
         if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
         _rtvCount.Add(player.SteamID);
-        Server.PrintToConsole($"{_rtvCount.Count} - {Utilities.GetPlayers().Count(rtver => rtver.TeamNum > 1) * _config.RtvPercent}");
+
+        //TODO: Add message saying player has voted to rtv
         
         if (_rtvCount.Count < Math.Floor(Utilities.GetPlayers().Count(rtver => rtver.TeamNum > 1) * _config.RtvPercent)) return;
         _wasRtv = true;
-        Server.PrintToChatAll($" {ChatColors.LightRed}[IG] {ChatColors.LightRed}RTV{ChatColors.Default} vote is starting.");
+        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_vote_starting"]}");
         _mapVoteTimer?.Kill();
         StartMapVote();
     }
@@ -155,7 +156,8 @@ public class MapChooser : BasePlugin
     {
         if (!_rtvCount.Contains(player.SteamID)) return;
         _rtvCount.Remove(player.SteamID);
-        Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{player.PlayerName}{ChatColors.Default} has removed their vote to {ChatColors.Green}rtv{ChatColors.Default}[{_rtvCount.Count}/{Utilities.GetPlayers().Count(player => player.TeamNum > 1)}].");
+        Server.PrintToChatAll(
+            $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.unrtv", player.PlayerName, _rtvCount.Count, Utilities.GetPlayers().Count(player => player.TeamNum > 1)]}");
     }
     
     [ConsoleCommand("css_nominate", "Puts up a map to be in the next vote")]
@@ -163,20 +165,21 @@ public class MapChooser : BasePlugin
     public void OnNominateCommand(CCSPlayerController? player, CommandInfo cmd)
     {
         if (_voteActive) return;
-        var menu = new ChatMenu("Nominations Menu - Type !# to nominate");
+        var menu = new ChatMenu(Localizer["mapchooser.nominate_header"]);
         foreach (var tmp in _maps.Select(map => map.Replace("ws:", "").Trim()))
         {
             if (tmp == Server.MapName)
-                menu.AddMenuOption($"{tmp} - Current Map", (_, _) => { }, true);
+                menu.AddMenuOption(Localizer["mapchooser.nominate_current_map", tmp], (_, _) => { }, true);
             else if(_mapHistory.Contains(tmp))
-                menu.AddMenuOption($"{tmp} - Recently Played", (_, _) => { }, true);
+                menu.AddMenuOption(Localizer["mapchooser.nominate_recent", tmp], (_, _) => { }, true);
             else if(_nominations.Values.Contains(tmp))
-                menu.AddMenuOption($"{tmp} - Already Nominated", (_, _) => { }, true);
+                menu.AddMenuOption(Localizer["mapchooser.nominate_nominated", tmp], (_, _) => { }, true);
             else
                 menu.AddMenuOption($"{tmp}", (player, option) =>
                 {
                     _nominations[player.SteamID] = tmp;
-                    Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{player.PlayerName}{ChatColors.Default} has nominated {ChatColors.Green}{option.Text}{ChatColors.Default}.");
+                    Server.PrintToChatAll(
+                        $"{Localizer["mapchooser.prefiex"]} {Localizer["mapchooser.nominate", player.PlayerName, option.Text]}");
                 });
         }
         ChatMenus.OpenMenu(player, menu);
@@ -214,7 +217,7 @@ public class MapChooser : BasePlugin
         _votes.Clear();
         _rtvCount.Clear();
         _mapVoteTimer = null;
-        var menu = new ChatMenu("Map Vote - Type !# to vote");
+        var menu = new ChatMenu(Localizer["mapchooser.vote_header"]);
         var voteMaps = new List<string>(_maps);
         var nextMap = new List<string>(_nominations.Values);
         if (!_config.IncludeCurrent) voteMaps.Remove("ws:"+Server.MapName);
@@ -234,15 +237,12 @@ public class MapChooser : BasePlugin
                 voteMaps.RemoveAt(index);
             }
         }
-
-        var message = new StringBuilder("Map Vote\n");
-
+        
         var number = 1;
         if (_wasRtv)
         {
-            message.Append($"{number}. Don't Change\n");
             number++;
-            menu.AddMenuOption("Don't Change", (controller, option) =>
+            menu.AddMenuOption(Localizer["mapchooser.option_dont_change"], (controller, option) =>
             {
                 if (!_voteActive) return;
                 if (_votes.TryGetValue(option.Text, out var count))
@@ -252,7 +252,8 @@ public class MapChooser : BasePlugin
 
                 _playerVotes[controller.SteamID] = option.Text;
                 _totalVotes++;
-                Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{controller.PlayerName}{ChatColors.Default} has voted for {ChatColors.Green}{option.Text}{ChatColors.Default}.");
+                Server.PrintToChatAll(
+                    $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.voted_for", controller.PlayerName, option.Text]}");
             });
         }
         
@@ -262,7 +263,6 @@ public class MapChooser : BasePlugin
             var index = random.Next(0, nextMap.Count - 1);
             var map = nextMap.ElementAt(index).Replace("ws:", "").Trim();
             nextMap.RemoveAt(index);
-            message.Append($"{number}. {map}\n");
             number++;
             menu.AddMenuOption(map, (controller, option) =>
             {
@@ -274,13 +274,13 @@ public class MapChooser : BasePlugin
 
                 _playerVotes[controller.SteamID] = option.Text;
                 _totalVotes++;
-                Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{controller.PlayerName}{ChatColors.Default} has voted for {ChatColors.Green}{option.Text}{ChatColors.Default}.");
+                Server.PrintToChatAll(
+                    $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.voted_for", controller.PlayerName, option.Text]}");
             });
         }
 
         if (!_wasRtv && _config.AllowExtend && _extends < _config.ExtendLimit)
         {
-            message.Append($"{number}. Extend\n");
             menu.AddMenuOption("Extend", (controller, option) =>
             {
                 if (!_voteActive) return;
@@ -291,7 +291,8 @@ public class MapChooser : BasePlugin
 
                 _playerVotes[controller.SteamID] = option.Text;
                 _totalVotes++;
-                Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{controller.PlayerName}{ChatColors.Default} has voted for {ChatColors.Green}{option.Text}{ChatColors.Default}.");
+                Server.PrintToChatAll(
+                    $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.voted_for", controller.PlayerName, option.Text]}");
             });
         }
 
@@ -327,12 +328,13 @@ public class MapChooser : BasePlugin
             }
         }
 
-        Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{winner}{ChatColors.Default} has been chosen as the next map.");
+        
+        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.map_won", winner]}");
 
         if (_wasRtv)
         {
             _wasRtv = false;
-            if (winner != "Dont Change")
+            if (!winner.Equals(Localizer["mapchooser.option_dont_change"]))
             {
                 // Log($"RTV successful changing map to {winner}");
                 if (_maps.Any(map => map.Trim() == "ws:" + winner))
@@ -348,7 +350,7 @@ public class MapChooser : BasePlugin
         }
         else
         {
-            if (winner == "Extend")
+            if (winner.Equals(Localizer["mapchooser.option_extend"]))
             {
                 _timeLimitConVar.SetValue(_timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep);
                 _extends++;
@@ -388,7 +390,7 @@ public class MapChooser : BasePlugin
             nextMap = nextMap.Where(map => !_mapHistory.Contains(map.Replace("ws:", "").Trim()) && !_nominations.Values.Contains(map.Replace("ws:", "").Trim())).ToList();
         }
         _nextMap = nextMap.ElementAt(random.Next(0, nextMap.Count - 1)).Replace("ws:", "");
-        Server.PrintToChatAll($" {ChatColors.LightRed}[IG]{ChatColors.Default} {ChatColors.Green}{_nextMap}{ChatColors.Default} has been chosen as the next map.");
+        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.map_won", _nextMap]}");
         AddTimer((_config.VoteStartTime * 60f) - _config.VoteDuration, () =>
         {
             GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw);
