@@ -7,7 +7,7 @@ map votes based on `mp_timelimit` but in the future `mp_maxrounds` is planned to
 
 ---
 ## API Version
-This plugin requires at least API version `61`
+This plugin requires at least API version `120`
 
 ---
 ## Usage
