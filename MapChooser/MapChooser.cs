@@ -140,10 +140,12 @@ public class MapChooser : BasePlugin
         }
         if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
         _rtvCount.Add(player.SteamID);
+        var required = (int)Math.Floor(Utilities.GetPlayers().Count(rtver => rtver.TeamNum > 1) * _config.RtvPercent);
 
         //TODO: Add message saying player has voted to rtv
+        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
         
-        if (_rtvCount.Count < Math.Floor(Utilities.GetPlayers().Count(rtver => rtver.TeamNum > 1) * _config.RtvPercent)) return;
+        if (_rtvCount.Count < required) return;
         _wasRtv = true;
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_vote_starting"]}");
         _mapVoteTimer?.Kill();
@@ -205,7 +207,11 @@ public class MapChooser : BasePlugin
         }
         
         //TODO: Inside this add a print to chat saying RTV is now enabled.
-        AddTimer(_config.RtvDelay * 60f, () => _canRtv = true, TimerFlags.STOP_ON_MAPCHANGE);
+        AddTimer(_config.RtvDelay * 60f, () =>
+        {
+            Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
+            _canRtv = true;
+        }, TimerFlags.STOP_ON_MAPCHANGE);
 
         _startTime = Server.EngineTime;
         _mapVoteTimer= AddTimer((_timeLimitConVar.GetPrimitiveValue<float>() * 60f) - (_config.VoteStartTime * 60f),  StartMapVote, TimerFlags.STOP_ON_MAPCHANGE);
@@ -346,7 +352,11 @@ public class MapChooser : BasePlugin
             else
             {
                 _canRtv = false;
-                AddTimer(_config.RtvDelay * 60f, () => _canRtv = true, TimerFlags.STOP_ON_MAPCHANGE);
+                AddTimer(_config.RtvDelay * 60f, () =>
+                {
+                    Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
+                    _canRtv = true;
+                }, TimerFlags.STOP_ON_MAPCHANGE);
             }
         }
         else
@@ -380,7 +390,11 @@ public class MapChooser : BasePlugin
         if (_wasRtv)
         {
             _wasRtv = false;
-            AddTimer(_config.RtvDelay * 60f, () => _canRtv = true, TimerFlags.STOP_ON_MAPCHANGE);
+            AddTimer(_config.RtvDelay * 60f, () =>
+            {
+                Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
+                _canRtv = true;
+            }, TimerFlags.STOP_ON_MAPCHANGE);
             return;
         }
         var nextMap = new List<string>(_maps);

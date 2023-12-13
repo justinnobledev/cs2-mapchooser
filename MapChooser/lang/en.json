@@ -1,8 +1,9 @@
 ﻿{
   "mapchooser.prefix": " {lightblue}[CSS]",
-  "mapchooser.vote_starting": "",
   "mapchooser.rtv_vote_starting": "{lightred}RTV{default} vote is starting",
   "mapchooser.rtv_not_available": "{lightred}RTV{default} is not currently available.",
+  "mapchooser.rtv_enabled": "{lightred}RTV{default} is now available.",
+  "mapchooser.rtv": "{green}{0}{default} has voted to {green}rtv{default}[{1}/{2}].",
   "mapchooser.unrtv": "{green}{0}{default} has removed their vote to {green}rtv{default}[{1}/{2}].",
   "mapchooser.nominate": "{green}{0}{default} has nominated {green}{1}{default}.",
   "mapchooser.nominate_header": "Nominations Menu - Type !# to nominate",
