@@ -11,5 +11,6 @@
     "IgnoreSpec": true,
     "AllowRtv": true,
     "RTVPercent": 0.6,
-    "RTVDelay": 3.0
+    "RTVDelay": 3.0,
+    "EnforceTimeLimit": true
 }

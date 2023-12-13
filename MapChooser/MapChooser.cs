@@ -32,13 +32,14 @@ public class Config
     public bool AllowRtv { get; set; } = true;
     public float RtvPercent { get; set; } = 0.6f;
     public float RtvDelay { get; set; } = 3.0f;
+    public bool EnforceTimeLimit { get; set; } = true;
 }
 
 [MinimumApiVersion(120)]
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
-    public override string ModuleVersion { get; } = "1.2.4";
+    public override string ModuleVersion { get; } = "1.2.5";
     public override string ModuleDescription { get; } = "Handles map voting and map changing";
     public override string ModuleAuthor { get; } = "Retro - https://insanitygaming.net/";
 
@@ -50,18 +51,18 @@ public class MapChooser : BasePlugin
     private string _configPath = "";
     private Config _config = new Config();
 
-    private List<string> _mapHistory = new List<string>();
-    private Dictionary<ulong, string> _nominations = new Dictionary<ulong, string>();
+    private List<string> _mapHistory = new();
+    private Dictionary<ulong, string> _nominations = new();
     private List<string> _maps = new List<string>();
-    private Dictionary<ulong, string> _playerVotes = new Dictionary<ulong, string>();
+    private Dictionary<ulong, string> _playerVotes = new();
 
-    private Dictionary<string, int> _votes = new Dictionary<string, int>();
+    private Dictionary<string, int> _votes = new();
 
     private int _totalVotes = 0;
     private bool _voteActive = false;
     private int _extends = 0;
 
-    private List<ulong> _rtvCount = new List<ulong>();
+    private List<ulong> _rtvCount = new();
     private bool _wasRtv = false;
     private bool _canRtv = false;
 
@@ -84,12 +85,6 @@ public class MapChooser : BasePlugin
             OnMapStart(Server.MapName);
         }
     }
-
-    // private void Log(string message)
-    // {
-    //     using var writer = new StreamWriter(Path.Combine(ModuleDirectory, "map_log.log"), append: true);
-    //     writer.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} {message}");
-    // }
 
     private static string FormatTime(float timeF)
     {
@@ -115,16 +110,6 @@ public class MapChooser : BasePlugin
 
         return time.ToString();
     }
-
-    // [ConsoleCommand("css_timeleft", "Prints the timeleft to chat")]
-    // public void OnTimeLeftCommand(CCSPlayerController? player, CommandInfo cmd)
-    // {
-    //     if (_startTime == 0 || _timeLimitConVar == null) return;
-    //     var timeLeft = _timeLimitConVar.GetPrimitiveValue<float>() * 60f;
-    //     var elapsed = Server.CurrentTime - _startTime;
-    //     var endTime = timeLeft - elapsed;
-    //     cmd.ReplyToCommand($" {ChatColors.LightRed}[IG] {ChatColors.Default}The map will end in {ChatColors.LightRed}{FormatTime((float)endTime)}");
-    // }
 
     [ConsoleCommand("css_rtv", "Rocks the vote")]
     [CommandHelper(whoCanExecute:CommandUsage.CLIENT_ONLY)]
@@ -206,7 +191,6 @@ public class MapChooser : BasePlugin
             return;
         }
         
-        //TODO: Inside this add a print to chat saying RTV is now enabled.
         AddTimer(_config.RtvDelay * 60f, () =>
         {
             Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
@@ -303,6 +287,12 @@ public class MapChooser : BasePlugin
             });
         }
 
+        foreach (var player in Utilities.GetPlayers())
+        {
+            ChatMenus.OpenMenu(player, menu);
+        }
+        
+
         AddTimer(Math.Min(_config.VoteDuration, 60f), OnVoteFinished, TimerFlags.STOP_ON_MAPCHANGE);
     }
 
@@ -343,7 +333,6 @@ public class MapChooser : BasePlugin
             _wasRtv = false;
             if (!winner.Equals(Localizer["mapchooser.option_dont_change"]))
             {
-                // Log($"RTV successful changing map to {winner}");
                 if (_maps.Any(map => map.Trim() == "ws:" + winner))
                     Server.ExecuteCommand($"ds_workshop_changelevel {winner}");
                 else
@@ -371,11 +360,14 @@ public class MapChooser : BasePlugin
             else
             {
                 _nextMap = winner;
-                _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - Math.Min(_config.VoteDuration, 60f), () =>
+                if(_config.EnforceTimeLimit)
                 {
-                    // Log($"Map vote successful changing map to {winner}");
-                    GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw);
-                }, TimerFlags.STOP_ON_MAPCHANGE);
+                    _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - Math.Min(_config.VoteDuration, 60f), () =>
+                    {
+                        var restartDelay = (float) (ConVar.Find("mp_round_restart_delay")?.GetPrimitiveValue<int>() ?? 5);
+                        GetGameRules().TerminateRound(restartDelay, RoundEndReason.RoundDraw);
+                    }, TimerFlags.STOP_ON_MAPCHANGE);
+                }
             }
         }
 
@@ -406,10 +398,11 @@ public class MapChooser : BasePlugin
         }
         _nextMap = nextMap.ElementAt(random.Next(0, nextMap.Count - 1)).Replace("ws:", "");
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.map_won", _nextMap]}");
-        AddTimer((_config.VoteStartTime * 60f) - _config.VoteDuration, () =>
+        if(_config.EnforceTimeLimit)
         {
-            GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw);
-        }, TimerFlags.STOP_ON_MAPCHANGE);
+            _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - _config.VoteDuration,
+                () => { GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw); }, TimerFlags.STOP_ON_MAPCHANGE);
+        }
     }
 
     private void OnMapStart(string mapName)
