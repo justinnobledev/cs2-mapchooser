@@ -364,7 +364,7 @@ public class MapChooser : BasePlugin
                 {
                     _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - Math.Min(_config.VoteDuration, 60f), () =>
                     {
-                        var restartDelay = (float) (ConVar.Find("mp_round_restart_delay")?.GetPrimitiveValue<int>() ?? 5);
+                        var restartDelay =ConVar.Find("mp_round_restart_delay")?.GetPrimitiveValue<float>() ?? 5f;
                         GetGameRules().TerminateRound(restartDelay, RoundEndReason.RoundDraw);
                     }, TimerFlags.STOP_ON_MAPCHANGE);
                 }
