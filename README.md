@@ -34,6 +34,12 @@ This plugin requires at least API version `120`
 ---
 ## Changelog
 ```
+1.2.5
+Added new translation for when someone rtv and for when it becomes enabled
+Made the time limit enforced an optional config value
+Made the time limit forcer end round time based on mp_round_restart_delay
+1.2.4
+Fixed map not switching
 1.2.3
 Added an AllowRtv option in the config to turn on and off rtv
 1.2.2
