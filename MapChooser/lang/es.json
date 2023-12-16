@@ -1,0 +1,18 @@
+{
+  "mapchooser.prefix": " {lightblue}[CSS]",
+  "mapchooser.rtv_vote_starting": "La votación {lightred}RTV{default} está comenzando",
+  "mapchooser.rtv_not_available": "En este momento, {lightred}RTV{default} no está disponible.",
+  "mapchooser.rtv_enabled": "{lightred}RTV{default} se encuentra disponible.",
+  "mapchooser.rtv": "{green}{0}{default} ha votado para realizar {green}RTV{default}[{1}/{2}].",
+  "mapchooser.unrtv": "{green}{0}{default} ha retirado su voto para realizar {green}RTV{default}[{1}/{2}].",
+  "mapchooser.nominate": "{green}{0}{default} ha nominado {green}{1}{default}.",
+  "mapchooser.nominate_header": "Menú de Nominaciones - Escribe !# para nominar",
+  "mapchooser.nominate_current_map": "{0} - Mapa Actual",
+  "mapchooser.nominate_recent": "{0} - Jugado Recientemente",
+  "mapchooser.nominate_nominated": "{0} - Ya Nominado",
+  "mapchooser.vote_header": "Votación de Mapas - Escribe !# para votar",
+  "mapchooser.option_dont_change": "No Cambiar",
+  "mapchooser.option_extend": "Extender",
+  "mapchooser.voted_for": "{green}{0}{default} ha votado por {green}{1}{default}.",
+  "mapchooser.map_won": "{green}{0}{default} ha sido elegido como el próximo mapa."
+}
