@@ -12,5 +12,6 @@
     "AllowRtv": true,
     "RTVPercent": 0.6,
     "RTVDelay": 3.0,
-    "EnforceTimeLimit": true
+    "EnforceTimeLimit": true,
+    "VoteStartSound": "sounds/ui/counter_beep.vsnd"
 }

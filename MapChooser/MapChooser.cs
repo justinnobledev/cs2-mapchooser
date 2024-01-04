@@ -19,6 +19,7 @@ public class Config
 {
     public float VoteStartTime { get; set; } = 3.0f;
     public bool AllowExtend { get; set; } = true;
+    public string VoteStartSound { get; set; } = "sounds/ui/counter_beep.vsnd";
     public float ExtendTimeStep { get; set; } = 10f;
     public int ExtendLimit { get; set; } = 3;
     public int ExcludeMaps { get; set; } = 0;
@@ -290,6 +291,7 @@ public class MapChooser : BasePlugin
         foreach (var player in Utilities.GetPlayers())
         {
             ChatMenus.OpenMenu(player, menu);
+            player.ExecuteClientCommand($"play ${_config.VoteStartSound}");
         }
         
 
