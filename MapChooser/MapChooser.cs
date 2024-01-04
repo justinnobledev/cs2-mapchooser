@@ -291,7 +291,7 @@ public class MapChooser : BasePlugin
         foreach (var player in Utilities.GetPlayers())
         {
             ChatMenus.OpenMenu(player, menu);
-            player.ExecuteClientCommand($"play ${_config.VoteStartSound}");
+            player.ExecuteClientCommand($"play {_config.VoteStartSound}");
         }
         
 
