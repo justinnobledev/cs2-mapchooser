@@ -203,12 +203,17 @@ public class MapChooser : BasePlugin
             Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
             return;
         }
-        
-        AddTimer(_config.RtvDelay * 60f, () =>
+        Console.WriteLine($"Setting rtv delay to {_config.RtvDelay * 60f} {_config.RtvDelay}");
+        if (_config.RtvDelay < 0.1f)
         {
-            Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
             _canRtv = true;
-        }, TimerFlags.STOP_ON_MAPCHANGE);
+        }
+        else
+            AddTimer(_config.RtvDelay * 60f, () =>
+            {
+                Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
+                _canRtv = true;
+            }, TimerFlags.STOP_ON_MAPCHANGE);
 
         _startTime = Server.EngineTime;
         _mapVoteTimer= AddTimer((_timeLimitConVar.GetPrimitiveValue<float>() * 60f) - (_config.VoteStartTime * 60f),  StartMapVote, TimerFlags.STOP_ON_MAPCHANGE);
