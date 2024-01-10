@@ -87,6 +87,7 @@ public class MapChooser : BasePlugin
         if (hotReload)
         {
             OnMapStart(Server.MapName);
+            AddTimer(0.5f, SetupTimeLimitCountDown);
         }
     }
 
