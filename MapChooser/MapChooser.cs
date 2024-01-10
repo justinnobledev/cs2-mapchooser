@@ -374,6 +374,12 @@ public class MapChooser : BasePlugin
                 _extends++;
                 _mapVoteTimer = AddTimer(_config.ExtendTimeStep + (60 - Math.Min(_config.VoteDuration, 60f)) - (_config.VoteStartTime * 60f), StartMapVote,
                     TimerFlags.STOP_ON_MAPCHANGE);
+                _canRtv = false;
+                AddTimer(_config.RtvDelay * 60f, () =>
+                {
+                    Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
+                    _canRtv = true;
+                }, TimerFlags.STOP_ON_MAPCHANGE);
             }
             else
             {
