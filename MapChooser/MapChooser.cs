@@ -24,13 +24,17 @@ public class Config
     public int ExcludeMaps { get; set; } = 0;
     public int IncludeMaps { get; set; } = 5;
     public bool IncludeCurrent { get; set; } = false;
+    [JsonPropertyName("DontChangeRTV")]
     public bool DontChangeRtv { get; set; } = true;
     public float VoteDuration { get; set; } = 15f;
-    public bool RunOfFVote { get; set; } = true;
-    public float VotePercent { get; set; } = 0.6f;
+    // TODO: Add in run off voting
+    // public bool RunOfFVote { get; set; } = true;
+    // public float VotePercent { get; set; } = 0.6f;
     public bool IgnoreSpec { get; set; } = true;
     public bool AllowRtv { get; set; } = true;
+    [JsonPropertyName("RTVPercent")]
     public float RtvPercent { get; set; } = 0.6f;
+    [JsonPropertyName("RTVDelay")]
     public float RtvDelay { get; set; } = 3.0f;
     public bool EnforceTimeLimit { get; set; } = true;
 }
