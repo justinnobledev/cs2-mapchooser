@@ -34,6 +34,13 @@ This plugin requires at least API version `120`
 ---
 ## Changelog
 ```
+1.2.6
+Added Polish translation - @Letaryat
+Added Spanish translation - @criskkky
+Mpa votes will now count down on hot reload
+Fixed RTV number being wrong due to cs2 bug
+Fixed some config values not being read in properly
+Fixed infinite RTV after RTV starts
 1.2.5
 Added new translation for when someone rtv and for when it becomes enabled
 Made the time limit enforced an optional config value
