@@ -1,5 +1,5 @@
 ﻿{
-  "mapchooser.prefix": " {lightblue}[CSS]",
+  "mapchooser.prefix": " {lightblue}[CSS]{default}",
   "mapchooser.vote_starting": "",
   "mapchooser.rtv_vote_starting": "{lightred}RTV{default} balsošana ir sākusies",
   "mapchooser.rtv_not_available": "{lightred}RTV{default} šobrīd nav pieejams.",

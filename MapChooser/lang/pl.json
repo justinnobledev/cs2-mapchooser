@@ -1,5 +1,5 @@
 ﻿{
-  "mapchooser.prefix": " {lightblue}[CSS]",
+  "mapchooser.prefix": " {lightblue}[CSS]{default}",
   "mapchooser.rtv_vote_starting": "{lightred}RTV{default} rozpoczęto głosowanie",
   "mapchooser.rtv_not_available": "{lightred}RTV{default} nie jest dostępne",
   "mapchooser.rtv_enabled": "{lightred}RTV{default} jest teraz dostępne",

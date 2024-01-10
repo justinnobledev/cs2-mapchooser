@@ -41,6 +41,7 @@ Mpa votes will now count down on hot reload
 Fixed RTV number being wrong due to cs2 bug
 Fixed some config values not being read in properly
 Fixed infinite RTV after RTV starts
+Fixed mapchooser.prefix not ending with {default} and coloring the wrong things
 1.2.5
 Added new translation for when someone rtv and for when it becomes enabled
 Made the time limit enforced an optional config value
