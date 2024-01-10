@@ -116,6 +116,13 @@ public class MapChooser : BasePlugin
         return time.ToString();
     }
 
+    private int GetOnlinePlayerCount(bool countSpec = false)
+    {
+        var players = Utilities.GetPlayers().Where((player) => player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected);
+        if (countSpec) players = players.Where((player) => player.TeamNum > 1);
+        return players.Count();
+    }
+
     [ConsoleCommand("css_rtv", "Rocks the vote")]
     [CommandHelper(whoCanExecute:CommandUsage.CLIENT_ONLY)]
     public void OnRtVCommand(CCSPlayerController? player, CommandInfo cmd)
@@ -130,7 +137,7 @@ public class MapChooser : BasePlugin
         }
         if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
         _rtvCount.Add(player.SteamID);
-        var required = (int)Math.Floor(Utilities.GetPlayers().Count(rtver => rtver.TeamNum > 1) * _config.RtvPercent);
+        var required = GetOnlinePlayerCount() * _config.RtvPercent;
 
         //TODO: Add message saying player has voted to rtv
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
@@ -149,7 +156,7 @@ public class MapChooser : BasePlugin
         if (!_rtvCount.Contains(player.SteamID)) return;
         _rtvCount.Remove(player.SteamID);
         Server.PrintToChatAll(
-            $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.unrtv", player.PlayerName, _rtvCount.Count, Utilities.GetPlayers().Count(player => player.TeamNum > 1)]}");
+            $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.unrtv", player.PlayerName, _rtvCount.Count, GetOnlinePlayerCount()]}");
     }
     
     [ConsoleCommand("css_nominate", "Puts up a map to be in the next vote")]
