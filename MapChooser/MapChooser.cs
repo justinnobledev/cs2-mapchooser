@@ -43,7 +43,7 @@ public class Config
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
-    public override string ModuleVersion { get; } = "1.2.6";
+    public override string ModuleVersion { get; } = "1.2.6c";
     public override string ModuleDescription { get; } = "Handles map voting and map changing";
     public override string ModuleAuthor { get; } = "Retro - https://insanitygaming.net/";
 
@@ -137,7 +137,7 @@ public class MapChooser : BasePlugin
         }
         if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
         _rtvCount.Add(player.SteamID);
-        var required = GetOnlinePlayerCount() * _config.RtvPercent;
+        var required = (int)Math.Floor(GetOnlinePlayerCount() * _config.RtvPercent);
 
         //TODO: Add message saying player has voted to rtv
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
