@@ -1,0 +1,18 @@
+﻿{
+  "mapchooser.prefix": " {lightblue}[CSS]{default}",
+  "mapchooser.rtv_vote_starting": "{lightred}RTV{default} голосування розпочато",
+  "mapchooser.rtv_not_available": "{lightred}RTV{default} наразі недоступно.",
+  "mapchooser.rtv_enabled": "{lightred}RTV{default} тепер доступно.",
+  "mapchooser.rtv": "{green}{0}{default} проголосував за {green}rtv{default}[{1}/{2}].",
+  "mapchooser.unrtv": "{green}{0}{default} відкликав свій голос за {green}rtv{default}[{1}/{2}].",
+  "mapchooser.nominate": "{green}{0}{default} висунув кандидатуру {green}{1}{default}.",
+  "mapchooser.nominate_header": "Меню номінацій - Введіть !# для номінації",
+  "mapchooser.nominate_current_map": "{0} - Поточна карта",
+  "mapchooser.nominate_recent": "{0} - Недавно грано",
+  "mapchooser.nominate_nominated": "{0} - Вже номіновано",
+  "mapchooser.vote_header": "Голосування за карту - Введіть !# для голосування",
+  "mapchooser.option_dont_change": "Не змінювати",
+  "mapchooser.option_extend": "Продовжити",
+  "mapchooser.voted_for": "{green}{0}{default} проголосував за {green}{1}{default}.",
+  "mapchooser.map_won": "{green}{0}{default} була обрана наступною картою."
+}
