@@ -1,0 +1,18 @@
+{
+  "mapchooser.prefix": " {lightblue}[CSS]{default}",
+  "mapchooser.rtv_vote_starting": "{lightred}RTV{default} 投票开始",
+  "mapchooser.rtv_not_available": "{lightred}RTV{default} 当前不可用。",
+  "mapchooser.rtv_enabled": "{lightred}RTV{default} 现在可用。",
+  "mapchooser.rtv": "{green}{0}{default} 已投票 {green}rtv{default}[{1}/{2}]。",
+  "mapchooser.unrtv": "{green}{0}{default} 已撤销投票 {green}rtv{default}[{1}/{2}]。",
+  "mapchooser.nominate": "{green}{0}{default} 提名了 {green}{1}{default}。",
+  "mapchooser.nominate_header": "提名菜单 - 输入 !# 来提名",
+  "mapchooser.nominate_current_map": "{0} - 当前地图",
+  "mapchooser.nominate_recent": "{0} - 最近玩过",
+  "mapchooser.nominate_nominated": "{0} - 已被提名",
+  "mapchooser.vote_header": "地图投票 - 输入 !# 来投票",
+  "mapchooser.option_dont_change": "不更改",
+  "mapchooser.option_extend": "延长",
+  "mapchooser.voted_for": "{green}{0}{default} 已投票给 {green}{1}{default}。",
+  "mapchooser.map_won": "{green}{0}{default} 已被选为下一张地图。"
+}
