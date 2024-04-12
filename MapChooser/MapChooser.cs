@@ -456,7 +456,7 @@ public class MapChooser : BasePlugin
         }
         else
         {
-            AddTimer((float) Math.Min(convar.GetPrimitiveValue<int>(), convar.GetPrimitiveValue<int>() - 1.0), () =>
+            AddTimer((float) Math.Min(0f, convar.GetPrimitiveValue<int>() - 1.0), () =>
             {
                 if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
                     Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
