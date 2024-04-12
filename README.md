@@ -7,7 +7,7 @@ map votes based on `mp_timelimit` but in the future `mp_maxrounds` is planned to
 
 ---
 ## API Version
-This plugin requires at least API version `120`
+This plugin requires at least API version `198`
 
 ---
 ## Usage
@@ -34,6 +34,13 @@ This plugin requires at least API version `120`
 ---
 ## Changelog
 ```
+1.3
+Added ua language @panikajo
+Added zh_cn language @1370533448
+Detecting when someone types rtv in chat
+Fixed bots/hltv being detected as a player
+Improved vote handling
+Auto-swithc on rtv if a map has already been voted for
 1.2.6
 Added Polish translation - @Letaryat
 Added Spanish translation - @criskkky
