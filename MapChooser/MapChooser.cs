@@ -83,6 +83,17 @@ public class MapChooser : BasePlugin
 
         RegisterEventHandler<EventRoundStart>(EventOnRoundStart);
         RegisterEventHandler<EventCsWinPanelMatch>(OnMatchEndEvent);
+        
+        RegisterEventHandler<EventPlayerChat>((@event, info) =>
+        {
+            if (@event.Text.Trim().Equals("rtv"))
+            {
+                var controller = Utilities.GetPlayerFromUserid(@event.Userid);
+                controller.ExecuteClientCommand("css_rtv");
+            }
+
+            return HookResult.Continue;
+        });
 
         if (hotReload)
         {
