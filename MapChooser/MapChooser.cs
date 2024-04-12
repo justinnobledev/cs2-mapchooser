@@ -125,14 +125,20 @@ public class MapChooser : BasePlugin
         _rtvCount.Add(player.SteamID);
         var required = (int)Math.Floor(GetOnlinePlayerCount() * _config.RtvPercent);
 
-        //TODO: Add message saying player has voted to rtv
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
         
         if (_rtvCount.Count < required) return;
         _wasRtv = true;
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_vote_starting"]}");
         _mapVoteTimer?.Kill();
-        StartMapVote();
+        if (_nextMap != "")
+        {
+            if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
+                Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
+            else
+                Server.ExecuteCommand($"changelevel {_nextMap}");
+        }else
+            StartMapVote();
     }
     
     [ConsoleCommand("css_unrtv", "No Rocks the vote")]
