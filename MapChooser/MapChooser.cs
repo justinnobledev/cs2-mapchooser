@@ -353,10 +353,13 @@ public class MapChooser : BasePlugin
             _wasRtv = false;
             if (!winner.Equals(Localizer["mapchooser.option_dont_change"]))
             {
-                if (_maps.Any(map => map.Trim() == "ws:" + winner))
-                    Server.ExecuteCommand($"ds_workshop_changelevel {winner}");
-                else
-                    Server.ExecuteCommand($"changelevel {winner}");
+                AddTimer(5f, () =>
+                {
+                    if (_maps.Any(map => map.Trim() == "ws:" + winner))
+                        Server.ExecuteCommand($"ds_workshop_changelevel {winner}");
+                    else
+                        Server.ExecuteCommand($"changelevel {winner}");
+                });
             }
             else
             {
