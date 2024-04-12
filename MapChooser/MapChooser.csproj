@@ -8,6 +8,9 @@
 	
 	<ItemGroup>
 	  <PackageReference Include="CounterStrikeSharp.API" Version="1.0.198" />
+	  <Content Include="../README.md">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	</ItemGroup>
 
 </Project>
