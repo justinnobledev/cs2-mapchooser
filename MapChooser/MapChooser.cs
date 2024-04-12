@@ -377,7 +377,7 @@ public class MapChooser : BasePlugin
             {
                 _timeLimitConVar.SetValue(_timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep);
                 _extends++;
-                _mapVoteTimer = AddTimer(_config.ExtendTimeStep + (60 - Math.Min(_config.VoteDuration, 60f)) - (_config.VoteStartTime * 60f), StartMapVote,
+                _mapVoteTimer = AddTimer(_config.ExtendTimeStep + (60 - Math.Min(_config.VoteDuration, 60f)), StartMapVote,
                     TimerFlags.STOP_ON_MAPCHANGE);
                 _canRtv = false;
                 AddTimer(_config.RtvDelay * 60f, () =>
