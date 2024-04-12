@@ -309,7 +309,7 @@ public class MapChooser : BasePlugin
 
         foreach (var player in Utilities.GetPlayers())
         {
-            ChatMenus.OpenMenu(player, menu);
+            MenuManager.OpenChatMenu(player, menu);
         }
         
 
