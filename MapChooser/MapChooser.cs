@@ -104,8 +104,8 @@ public class MapChooser : BasePlugin
     
     private int GetOnlinePlayerCount(bool countSpec = false)
     {
-        var players = Utilities.GetPlayers().Where((player) => player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected);
-        if (countSpec) players = players.Where((player) => player.TeamNum > 1);
+        var players = Utilities.GetPlayers().Where((player) => player is {IsValid: true, Connected: PlayerConnectedState.PlayerConnected, IsBot: false, IsHLTV: false});
+        if (!countSpec) players = players.Where((player) => player.TeamNum > 1);
         return players.Count();
     }
 
