@@ -245,13 +245,16 @@ public class MapChooser : BasePlugin
             menu.AddMenuOption(Localizer["mapchooser.option_dont_change"], (controller, option) =>
             {
                 if (!_voteActive) return;
+                if (_playerVotes.TryGetValue(controller.SteamID, out var vote))
+                    _votes[vote]--;
                 if (_votes.TryGetValue(option.Text, out var count))
                     _votes[option.Text] = count + 1;
                 else
                     _votes[option.Text] = 1;
 
+                if(!_playerVotes.ContainsKey(controller.SteamID))
+                    _totalVotes++;
                 _playerVotes[controller.SteamID] = option.Text;
-                _totalVotes++;
                 Server.PrintToChatAll(
                     $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.voted_for", controller.PlayerName, option.Text]}");
             });
@@ -267,13 +270,17 @@ public class MapChooser : BasePlugin
             menu.AddMenuOption(map, (controller, option) =>
             {
                 if (!_voteActive) return;
+                if (_playerVotes.TryGetValue(controller.SteamID, out var vote))
+                    _votes[vote]--;
                 if (_votes.TryGetValue(option.Text, out var count))
                     _votes[option.Text] = count + 1;
                 else
                     _votes[option.Text] = 1;
 
+                if(!_playerVotes.ContainsKey(controller.SteamID))
+                    _totalVotes++;
                 _playerVotes[controller.SteamID] = option.Text;
-                _totalVotes++;
+                
                 Server.PrintToChatAll(
                     $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.voted_for", controller.PlayerName, option.Text]}");
             });
@@ -284,13 +291,17 @@ public class MapChooser : BasePlugin
             menu.AddMenuOption("Extend", (controller, option) =>
             {
                 if (!_voteActive) return;
+                if (_playerVotes.TryGetValue(controller.SteamID, out var vote))
+                    _votes[vote]--;
                 if (_votes.TryGetValue(option.Text, out var count))
                     _votes[option.Text] = count + 1;
                 else
                     _votes[option.Text] = 1;
 
+                if(!_playerVotes.ContainsKey(controller.SteamID))
+                    _totalVotes++;
+                
                 _playerVotes[controller.SteamID] = option.Text;
-                _totalVotes++;
                 Server.PrintToChatAll(
                     $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.voted_for", controller.PlayerName, option.Text]}");
             });
