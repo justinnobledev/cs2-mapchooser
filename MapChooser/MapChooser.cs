@@ -39,7 +39,7 @@ public class Config
     public bool EnforceTimeLimit { get; set; } = true;
 }
 
-[MinimumApiVersion(120)]
+[MinimumApiVersion(198)]
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
