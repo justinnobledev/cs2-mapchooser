@@ -83,17 +83,26 @@ public class MapChooser : BasePlugin
 
         RegisterEventHandler<EventRoundStart>(EventOnRoundStart);
         RegisterEventHandler<EventCsWinPanelMatch>(OnMatchEndEvent);
-        
-        RegisterEventHandler<EventPlayerChat>((@event, info) =>
+ 
+        AddCommandListener("say", (player, info) =>
         {
-            if (@event.Text.Trim().Equals("rtv"))
+            if (player == null) return HookResult.Continue;
+            if (info.GetArg(1).Equals("rtv"))
             {
-                var controller = Utilities.GetPlayerFromUserid(@event.Userid);
-                controller.ExecuteClientCommand("css_rtv");
+                DoRtv(player);
             }
-
             return HookResult.Continue;
         });
+        AddCommandListener("say_team", (player, info) =>
+        {
+            if (player == null) return HookResult.Continue;
+            if (info.GetArg(1).Equals("rtv"))
+            {
+                DoRtv(player);
+            }
+            return HookResult.Continue;
+        });
+        
 
         if (hotReload)
         {
@@ -118,6 +127,36 @@ public class MapChooser : BasePlugin
         if (!_canRtv)
         {
             cmd.ReplyToCommand(
+                $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_not_available"]}");
+            return;
+        }
+        if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
+        _rtvCount.Add(player.SteamID);
+        var required = (int)Math.Floor(GetOnlinePlayerCount() * _config.RtvPercent);
+
+        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
+        
+        if (_rtvCount.Count < required) return;
+        _wasRtv = true;
+        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_vote_starting"]}");
+        _mapVoteTimer?.Kill();
+        if (_nextMap != "")
+        {
+            if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
+                Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
+            else
+                Server.ExecuteCommand($"changelevel {_nextMap}");
+        }else
+            StartMapVote();
+    }
+
+    void DoRtv(CCSPlayerController player)
+    {
+        if (!_config.AllowRtv)
+            return;
+        if (!_canRtv)
+        {
+            player.PrintToChat(
                 $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_not_available"]}");
             return;
         }
