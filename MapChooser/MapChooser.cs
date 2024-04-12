@@ -101,32 +101,7 @@ public class MapChooser : BasePlugin
             AddTimer(0.5f, SetupTimeLimitCountDown);
         }
     }
-
-    private static string FormatTime(float timeF)
-    {
-        if (timeF <= 0.0f)
-        {
-            return "N/A";
-        }
-
-        var time = new StringBuilder();
-
-        var hours = (int)(timeF / 3600);
-        timeF %= 3600;
-
-        var mins = (int)(timeF / 60);
-        timeF %= 60;
-
-        var seconds = (int) timeF;
-        
-        if (hours > 0)
-            time.Append($"{hours:00}:");
-        time.Append($"{mins:00}:");
-        time.Append($"{seconds:00}.");
-
-        return time.ToString();
-    }
-
+    
     private int GetOnlinePlayerCount(bool countSpec = false)
     {
         var players = Utilities.GetPlayers().Where((player) => player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected);
