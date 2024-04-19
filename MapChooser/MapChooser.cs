@@ -234,7 +234,7 @@ public class MapChooser : BasePlugin
         }
         if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
         _rtvCount.Add(player.SteamID);
-        var required = (int)Math.Floor(GetOnlinePlayerCount() * _config.RtvPercent);
+        var required = (int)Math.Ceiling(GetOnlinePlayerCount() * _config.RtvPercent);
 
         Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
         
