@@ -567,7 +567,7 @@ public class MapChooser : BasePlugin
     public HookResult OnMatchEndEvent(EventCsWinPanelMatch @event, GameEventInfo info)
     {
         var convar = ConVar.Find("mp_match_restart_delay");
-        if (convar == null)
+        if (convar is null)
         {
             if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
                 Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
@@ -576,7 +576,8 @@ public class MapChooser : BasePlugin
         }
         else
         {
-            AddTimer((float) Math.Min(0f, convar.GetPrimitiveValue<int>() - 1.0), () =>
+            var delay = convar.GetPrimitiveValue<int>();
+            AddTimer(Math.Max(0, delay), () =>
             {
                 if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
                     Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
