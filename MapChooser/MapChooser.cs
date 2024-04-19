@@ -47,8 +47,8 @@ public class MapChooser : BasePlugin
     public override string ModuleDescription { get; } = "Handles map voting and map changing";
     public override string ModuleAuthor { get; } = "Retro - https://insanitygaming.net/";
 
-    private double _startTime = 0f;
-    private ConVar? _timeLimitConVar = null;
+    private float _startTime = 0f;
+    // private ConVar? _timeLimitConVar = null;
 
     private string _mapsPath = "";
     
@@ -73,7 +73,7 @@ public class MapChooser : BasePlugin
     private Timer? _mapVoteTimer;
 
     private string _nextMap = "";
-
+    
     public override void Load(bool hotReload)
     {
         _configPath = Path.Combine(ModuleDirectory, "config.json");
@@ -91,6 +91,21 @@ public class MapChooser : BasePlugin
             {
                 DoRtv(player);
             }
+            else if (info.GetArg(1).Equals("timeleft"))
+            {
+                var timeLimitConVar = ConVar.Find("mp_timelimit");
+                if (timeLimitConVar is null)
+                {
+                    Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
+                    return HookResult.Continue;
+                }
+
+                var timeLimit = timeLimitConVar.GetPrimitiveValue<float>() * 60f;
+                var timeElapsed = Server.CurrentTime - _startTime;
+
+                var timeString = FormatTime(timeLimit - timeElapsed);
+                player.PrintToChat($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.timeleft", timeString]}");
+            }
             return HookResult.Continue;
         });
         AddCommandListener("say_team", (player, info) =>
@@ -99,6 +114,21 @@ public class MapChooser : BasePlugin
             if (info.GetArg(1).Equals("rtv"))
             {
                 DoRtv(player);
+            }
+            else if (info.GetArg(1).Equals("timeleft"))
+            {
+                var timeLimitConVar = ConVar.Find("mp_timelimit");
+                if (timeLimitConVar is null)
+                {
+                    Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
+                    return HookResult.Continue;
+                }
+
+                var timeLimit = timeLimitConVar.GetPrimitiveValue<float>() * 60f;
+                var timeElapsed = Server.CurrentTime - _startTime;
+
+                var timeString = FormatTime(timeLimit - timeElapsed);
+                player.PrintToChat($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.timeleft", timeString]}");
             }
             return HookResult.Continue;
         });
@@ -116,6 +146,48 @@ public class MapChooser : BasePlugin
         var players = Utilities.GetPlayers().Where((player) => player is {IsValid: true, Connected: PlayerConnectedState.PlayerConnected, IsBot: false, IsHLTV: false});
         if (!countSpec) players = players.Where((player) => player.TeamNum > 1);
         return players.Count();
+    }
+
+    [ConsoleCommand("css_timeleft", "Prints the timeleft")]
+    public void OnTimeLeftCommand(CCSPlayerController? player, CommandInfo cmd)
+    {
+        var timeLimitConVar = ConVar.Find("mp_timelimit");
+        if (timeLimitConVar is null)
+        {
+            Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
+            return;
+        }
+
+        var timeLimit = timeLimitConVar.GetPrimitiveValue<float>() * 60f;
+        var timeElapsed = Server.CurrentTime - _startTime;
+
+        var timeString = FormatTime(timeLimit - timeElapsed);
+        cmd.ReplyToCommand($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.timeleft", timeString]}");
+    }
+    
+    private static string FormatTime(float timeF)
+    {
+        if (timeF <= 0.0f)
+        {
+            return "N/A";
+        }
+
+        var time = new StringBuilder();
+
+        var hours = (int)(timeF / 3600);
+        timeF %= 3600;
+
+        var mins = (int)(timeF / 60);
+        timeF %= 60;
+
+        var seconds = (int) timeF;
+
+        if (hours > 0)
+            time.Append($"{hours:00}:");
+        time.Append($"{mins:00}:");
+        time.Append($"{seconds:00}.");
+
+        return time.ToString();
     }
 
     [ConsoleCommand("css_rtv", "Rocks the vote")]
@@ -227,8 +299,8 @@ public class MapChooser : BasePlugin
 
     private void SetupTimeLimitCountDown()
     {
-        _timeLimitConVar = ConVar.Find("mp_timelimit");
-        if (_timeLimitConVar == null)
+        var timeLimitConVar = ConVar.Find("mp_timelimit");
+        if (timeLimitConVar is null)
         {
             Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
             return;
@@ -245,8 +317,8 @@ public class MapChooser : BasePlugin
                 _canRtv = true;
             }, TimerFlags.STOP_ON_MAPCHANGE);
 
-        _startTime = Server.EngineTime;
-        _mapVoteTimer= AddTimer((_timeLimitConVar.GetPrimitiveValue<float>() * 60f) - (_config.VoteStartTime * 60f),  StartMapVote, TimerFlags.STOP_ON_MAPCHANGE);
+        _startTime = Server.CurrentTime;
+        _mapVoteTimer= AddTimer((timeLimitConVar.GetPrimitiveValue<float>() * 60f) - (_config.VoteStartTime * 60f),  StartMapVote, TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     private void StartMapVote()
@@ -414,9 +486,18 @@ public class MapChooser : BasePlugin
         {
             if (winner.Equals(Localizer["mapchooser.option_extend"]))
             {
-                _timeLimitConVar.SetValue(_timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep);
+                var timeLimitConVar = ConVar.Find("mp_timelimit");
+                if (timeLimitConVar is null)
+                {
+                    Logger.LogCritical("Unable to find \"mp_timelimit\"");
+                }else
+                {
+                    Logger.LogInformation($"Setting mp_timelimit to {timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep}");
+                    timeLimitConVar.SetValue(timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep);
+                }
                 _extends++;
-                _mapVoteTimer = AddTimer(_config.ExtendTimeStep + (60 - Math.Min(_config.VoteDuration, 60f)), StartMapVote,
+                Logger.LogInformation($"Setting next map vote time to {(_config.ExtendTimeStep * 60f) + (60 - Math.Min(_config.VoteDuration, 60f))}");
+                _mapVoteTimer = AddTimer((_config.ExtendTimeStep * 60f) + (60 - Math.Min(_config.VoteDuration, 60f)), StartMapVote,
                     TimerFlags.STOP_ON_MAPCHANGE);
                 _canRtv = false;
                 AddTimer(_config.RtvDelay * 60f, () =>
@@ -520,7 +601,7 @@ public class MapChooser : BasePlugin
         _rtvCount.Clear();
 
         //Set mp_timelimit convar handler to null
-        _timeLimitConVar = null;
+        // _timeLimitConVar = null;
 
         //Reinitialize values to 0
         _startTime = 0;
