@@ -18,8 +18,11 @@ namespace MapChooser;
 public class Config
 {
     public float VoteStartTime { get; set; } = 3.0f;
+    public int VoteStartTimeRound { get; set; } = 5;
     public bool AllowExtend { get; set; } = true;
     public float ExtendTimeStep { get; set; } = 10f;
+
+    public int ExtendRoundStep { get; set; } = 10;
     public int ExtendLimit { get; set; } = 3;
     public int ExcludeMaps { get; set; } = 0;
     public int IncludeMaps { get; set; } = 5;
@@ -43,7 +46,7 @@ public class Config
 public class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
-    public override string ModuleVersion { get; } = "1.3";
+    public override string ModuleVersion { get; } = "1.3.1";
     public override string ModuleDescription { get; } = "Handles map voting and map changing";
     public override string ModuleAuthor { get; } = "Retro - https://insanitygaming.net/";
 
@@ -83,7 +86,10 @@ public class MapChooser : BasePlugin
 
         RegisterEventHandler<EventRoundStart>(EventOnRoundStart);
         RegisterEventHandler<EventCsWinPanelMatch>(OnMatchEndEvent);
- 
+
+        RegisterEventHandler<EventRoundStart>(OnEventRoundStart);
+
+
         AddCommandListener("say", (player, info) =>
         {
             if (player == null) return HookResult.Continue;
@@ -140,7 +146,28 @@ public class MapChooser : BasePlugin
             AddTimer(0.5f, SetupTimeLimitCountDown);
         }
     }
-    
+
+    private HookResult OnEventRoundStart(EventRoundStart @event, GameEventInfo info)
+    {
+        var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").FirstOrDefault();
+        if (gameRules?.GameRules is null) return HookResult.Continue;
+
+        var roundLimit = ConVar.Find("mp_maxrounds");
+        if (roundLimit is null || roundLimit.GetPrimitiveValue<int>() <= 0) return HookResult.Continue;
+
+        var totalRounds = gameRules.GameRules.TotalRoundsPlayed;
+        var maxRounds = roundLimit.GetPrimitiveValue<int>();
+        var roundsLeft = maxRounds - totalRounds;
+
+        if (roundsLeft > _config.VoteStartTimeRound) return HookResult.Continue;
+        if (_voteActive) return HookResult.Continue;
+        if (_nextMap.Length > 0) return HookResult.Continue;
+        
+        StartMapVote();
+
+        return HookResult.Continue;
+    }
+
     private int GetOnlinePlayerCount(bool countSpec = false)
     {
         var players = Utilities.GetPlayers().Where((player) => player is {IsValid: true, Connected: PlayerConnectedState.PlayerConnected, IsBot: false, IsHLTV: false});
@@ -305,6 +332,9 @@ public class MapChooser : BasePlugin
             Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
             return;
         }
+
+        if (timeLimitConVar.GetPrimitiveValue<float>() <= 0.1) return;
+        
         Console.WriteLine($"Setting rtv delay to {_config.RtvDelay * 60f} {_config.RtvDelay}");
         if (_config.RtvDelay < 0.1f)
         {
