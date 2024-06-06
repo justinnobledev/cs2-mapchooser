@@ -10,40 +10,14 @@ using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 using Timer = CounterStrikeSharp.API.Modules.Timers.Timer;
 
 namespace MapChooser;
 
-public class Config
-{
-    public float VoteStartTime { get; set; } = 3.0f;
-    public int VoteStartTimeRound { get; set; } = 5;
-    public bool AllowExtend { get; set; } = true;
-    public float ExtendTimeStep { get; set; } = 10f;
-
-    public int ExtendRoundStep { get; set; } = 10;
-    public int ExtendLimit { get; set; } = 3;
-    public int ExcludeMaps { get; set; } = 0;
-    public int IncludeMaps { get; set; } = 5;
-    public bool IncludeCurrent { get; set; } = false;
-    [JsonPropertyName("DontChangeRTV")]
-    public bool DontChangeRtv { get; set; } = true;
-    public float VoteDuration { get; set; } = 15f;
-    // TODO: Add in run off voting
-    // public bool RunOfFVote { get; set; } = true;
-    // public float VotePercent { get; set; } = 0.6f;
-    public bool IgnoreSpec { get; set; } = true;
-    public bool AllowRtv { get; set; } = true;
-    [JsonPropertyName("RTVPercent")]
-    public float RtvPercent { get; set; } = 0.6f;
-    [JsonPropertyName("RTVDelay")]
-    public float RtvDelay { get; set; } = 3.0f;
-    public bool EnforceTimeLimit { get; set; } = true;
-}
-
 [MinimumApiVersion(198)]
-public class MapChooser : BasePlugin
+public partial class MapChooser : BasePlugin
 {
     public override string ModuleName { get; } = "Map Chooser";
     public override string ModuleVersion { get; } = "1.3.1";
@@ -56,7 +30,7 @@ public class MapChooser : BasePlugin
     private string _mapsPath = "";
     
     private string _configPath = "";
-    private Config _config = new Config();
+    private Config _config = new();
 
     private List<string> _mapHistory = new();
     private Dictionary<ulong, string> _nominations = new();
@@ -74,255 +48,136 @@ public class MapChooser : BasePlugin
     private bool _canRtv = false;
 
     private Timer? _mapVoteTimer;
+    private Timer? _rtvDelayTimer;
 
     private string _nextMap = "";
-    
+
+    private bool _firstRoundStarted = false;
+    private Timer? _fixSwitchMapTimer;
+
     public override void Load(bool hotReload)
     {
         _configPath = Path.Combine(ModuleDirectory, "config.json");
         _mapsPath = Path.Combine(ModuleDirectory, "maps.txt");
+        
         RegisterListener<Listeners.OnMapEnd>(OnMapEnd);
         RegisterListener<Listeners.OnMapStart>(OnMapStart);
 
-        RegisterEventHandler<EventRoundStart>(EventOnRoundStart);
+        RegisterEventHandler<EventRoundStart>(OnEventRoundStart);
         RegisterEventHandler<EventCsWinPanelMatch>(OnMatchEndEvent);
 
-        RegisterEventHandler<EventRoundStart>(OnEventRoundStart);
-
-
-        AddCommandListener("say", (player, info) =>
+        RegisterEventHandler<EventCsIntermission>((@event, info) =>
         {
-            if (player == null) return HookResult.Continue;
-            if (info.GetArg(1).Equals("rtv"))
-            {
-                DoRtv(player);
-            }
-            else if (info.GetArg(1).Equals("timeleft"))
-            {
-                var timeLimitConVar = ConVar.Find("mp_timelimit");
-                if (timeLimitConVar is null)
-                {
-                    Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
-                    return HookResult.Continue;
-                }
-
-                var timeLimit = timeLimitConVar.GetPrimitiveValue<float>() * 60f;
-                var timeElapsed = Server.CurrentTime - _startTime;
-
-                var timeString = FormatTime(timeLimit - timeElapsed);
-                player.PrintToChat($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.timeleft", timeString]}");
-            }
-            return HookResult.Continue;
-        });
-        AddCommandListener("say_team", (player, info) =>
-        {
-            if (player == null) return HookResult.Continue;
-            if (info.GetArg(1).Equals("rtv"))
-            {
-                DoRtv(player);
-            }
-            else if (info.GetArg(1).Equals("timeleft"))
-            {
-                var timeLimitConVar = ConVar.Find("mp_timelimit");
-                if (timeLimitConVar is null)
-                {
-                    Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
-                    return HookResult.Continue;
-                }
-
-                var timeLimit = timeLimitConVar.GetPrimitiveValue<float>() * 60f;
-                var timeElapsed = Server.CurrentTime - _startTime;
-
-                var timeString = FormatTime(timeLimit - timeElapsed);
-                player.PrintToChat($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.timeleft", timeString]}");
-            }
+            Logger.LogInformation("EventCsIntermission triggered");
             return HookResult.Continue;
         });
         
+        AddCommandListener("say", OnSayCommand);
+        AddCommandListener("say_team", OnSayCommand);
 
         if (hotReload)
         {
             OnMapStart(Server.MapName);
-            AddTimer(0.5f, SetupTimeLimitCountDown);
+            AddTimer(1f, ()=>
+            {
+                hotReload = false;
+                SetupTimeLimitCountDown();
+            }, TimerFlags.STOP_ON_MAPCHANGE);
         }
     }
 
     private HookResult OnEventRoundStart(EventRoundStart @event, GameEventInfo info)
     {
-        var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").FirstOrDefault();
-        if (gameRules?.GameRules is null) return HookResult.Continue;
-
-        var roundLimit = ConVar.Find("mp_maxrounds");
-        if (roundLimit is null || roundLimit.GetPrimitiveValue<int>() <= 0) return HookResult.Continue;
-
-        var totalRounds = gameRules.GameRules.TotalRoundsPlayed;
-        var maxRounds = roundLimit.GetPrimitiveValue<int>();
-        var roundsLeft = maxRounds - totalRounds;
-
-        if (roundsLeft > _config.VoteStartTimeRound) return HookResult.Continue;
-        if (_voteActive) return HookResult.Continue;
-        if (_nextMap.Length > 0) return HookResult.Continue;
-        
-        StartMapVote();
-
-        return HookResult.Continue;
-    }
-
-    private int GetOnlinePlayerCount(bool countSpec = false)
-    {
-        var players = Utilities.GetPlayers().Where((player) => player is {IsValid: true, Connected: PlayerConnectedState.PlayerConnected, IsBot: false, IsHLTV: false});
-        if (!countSpec) players = players.Where((player) => player.TeamNum > 1);
-        return players.Count();
-    }
-
-    [ConsoleCommand("css_timeleft", "Prints the timeleft")]
-    public void OnTimeLeftCommand(CCSPlayerController? player, CommandInfo cmd)
-    {
-        var timeLimitConVar = ConVar.Find("mp_timelimit");
-        if (timeLimitConVar is null)
+        if (!_firstRoundStarted)
         {
-            Logger.LogError("[MapChooser] Unable to find \"mp_timelimit\" convar failing");
-            return;
-        }
-
-        var timeLimit = timeLimitConVar.GetPrimitiveValue<float>() * 60f;
-        var timeElapsed = Server.CurrentTime - _startTime;
-
-        var timeString = FormatTime(timeLimit - timeElapsed);
-        cmd.ReplyToCommand($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.timeleft", timeString]}");
-    }
-    
-    private static string FormatTime(float timeF)
-    {
-        if (timeF <= 0.0f)
-        {
-            return "N/A";
-        }
-
-        var time = new StringBuilder();
-
-        var hours = (int)(timeF / 3600);
-        timeF %= 3600;
-
-        var mins = (int)(timeF / 60);
-        timeF %= 60;
-
-        var seconds = (int) timeF;
-
-        if (hours > 0)
-            time.Append($"{hours:00}:");
-        time.Append($"{mins:00}:");
-        time.Append($"{seconds:00}.");
-
-        return time.ToString();
-    }
-
-    [ConsoleCommand("css_rtv", "Rocks the vote")]
-    [CommandHelper(whoCanExecute:CommandUsage.CLIENT_ONLY)]
-    public void OnRtVCommand(CCSPlayerController? player, CommandInfo cmd)
-    {
-        if (!_config.AllowRtv)
-            return;
-        if (!_canRtv)
-        {
-            cmd.ReplyToCommand(
-                $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_not_available"]}");
-            return;
-        }
-        if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
-        _rtvCount.Add(player.SteamID);
-        var required = (int)Math.Floor(GetOnlinePlayerCount() * _config.RtvPercent);
-
-        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
-        
-        if (_rtvCount.Count < required) return;
-        _wasRtv = true;
-        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_vote_starting"]}");
-        _mapVoteTimer?.Kill();
-        if (_nextMap != "")
-        {
-            if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
-                Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
-            else
-                Server.ExecuteCommand($"changelevel {_nextMap}");
-        }else
-            StartMapVote();
-    }
-
-    void DoRtv(CCSPlayerController player)
-    {
-        if (!_config.AllowRtv)
-            return;
-        if (!_canRtv)
-        {
-            player.PrintToChat(
-                $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_not_available"]}");
-            return;
-        }
-        if (_rtvCount.Contains(player!.SteamID) || _voteActive) return;
-        _rtvCount.Add(player.SteamID);
-        var required = (int)Math.Ceiling(GetOnlinePlayerCount() * _config.RtvPercent);
-
-        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv", player.PlayerName, _rtvCount.Count, required]}");
-        
-        if (_rtvCount.Count < required) return;
-        _wasRtv = true;
-        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_vote_starting"]}");
-        _mapVoteTimer?.Kill();
-        if (_nextMap != "")
-        {
-            if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
-                Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
-            else
-                Server.ExecuteCommand($"changelevel {_nextMap}");
-        }else
-            StartMapVote();
-    }
-    
-    [ConsoleCommand("css_unrtv", "No Rocks the vote")]
-    [CommandHelper(whoCanExecute:CommandUsage.CLIENT_ONLY)]
-    public void OnUnRtVCommand(CCSPlayerController? player, CommandInfo cmd)
-    {
-        if (!_rtvCount.Contains(player.SteamID)) return;
-        _rtvCount.Remove(player.SteamID);
-        Server.PrintToChatAll(
-            $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.unrtv", player.PlayerName, _rtvCount.Count, GetOnlinePlayerCount()]}");
-    }
-    
-    [ConsoleCommand("css_nominate", "Puts up a map to be in the next vote")]
-    [CommandHelper(whoCanExecute:CommandUsage.CLIENT_ONLY)]
-    public void OnNominateCommand(CCSPlayerController? player, CommandInfo cmd)
-    {
-        if (_voteActive) return;
-        var menu = new ChatMenu(Localizer["mapchooser.nominate_header"]);
-        foreach (var tmp in _maps.Select(map => map.Replace("ws:", "").Trim()))
-        {
-            if (tmp == Server.MapName)
-                menu.AddMenuOption(Localizer["mapchooser.nominate_current_map", tmp], (_, _) => { }, true);
-            else if(_mapHistory.Contains(tmp))
-                menu.AddMenuOption(Localizer["mapchooser.nominate_recent", tmp], (_, _) => { }, true);
-            else if(_nominations.Values.Contains(tmp))
-                menu.AddMenuOption(Localizer["mapchooser.nominate_nominated", tmp], (_, _) => { }, true);
-            else
-                menu.AddMenuOption($"{tmp}", (player, option) =>
-                {
-                    _nominations[player.SteamID] = tmp;
-                    Server.PrintToChatAll(
-                        $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.nominate", player.PlayerName, option.Text]}");
-                });
-        }
-        ChatMenus.OpenMenu(player, menu);
-    }
-
-    private HookResult EventOnRoundStart(EventRoundStart @event, GameEventInfo info)
-    {
-        if (_mapVoteTimer == null && !_voteActive && _nextMap == "")
-        {
+            _rtvDelayTimer?.Kill();
+            _mapVoteTimer?.Kill();
             SetupTimeLimitCountDown();
         }
+        _firstRoundStarted = true;
 
         return HookResult.Continue;
     }
+
+    private HookResult OnMatchEndEvent(EventCsWinPanelMatch @event, GameEventInfo info)
+    {
+        if (_fixSwitchMapTimer is not null)
+        {
+            _fixSwitchMapTimer.Kill();
+            _fixSwitchMapTimer = null;
+        }
+        Logger.LogInformation("OnMatchEndEvent triggered");
+        var convar = ConVar.Find("mp_match_restart_delay");
+        if (convar is null)
+        {
+            SwitchMap();
+        }
+        else
+        {
+            var delay = convar.GetPrimitiveValue<int>();
+            AddTimer(Math.Max(0f, delay - 0.5f), () =>
+            {
+                SwitchMap();
+            }, TimerFlags.STOP_ON_MAPCHANGE);
+        }
+        return HookResult.Continue;
+    }
+
+    #region Listeners
+    private void OnMapStart(string mapName)
+    {
+        Logger.LogInformation($"OnMapStart {mapName}");
+        try
+        {
+            var json = File.ReadAllText(_configPath);
+            _config = JsonSerializer.Deserialize<Config>(json);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"Error occurred while reading map list: {e.Message}");
+            Logger.LogError(e.StackTrace);
+        }
+        
+
+        _maps = new List<string>(File.ReadLines(_mapsPath));
+        if (_mapHistory.Count > _config.ExcludeMaps)
+            _mapHistory.RemoveAt(0);
+        
+        SetupTimeLimitCountDown();
+    }
+
+    private void OnMapEnd()
+    {
+        _firstRoundStarted = false;
+        _nextMap = "";
+        //Add the current map to map history
+        _mapHistory.Add(Server.MapName);
+
+        //Clear the various lists/dictionaries
+        _nominations.Clear();
+        _maps.Clear();
+        _playerVotes.Clear();
+        _votes.Clear();
+        _rtvCount.Clear();
+
+        //Set mp_timelimit convar handler to null
+        // _timeLimitConVar = null;
+
+        //Reinitialize values to 0
+        _startTime = 0;
+        _totalVotes = 0;
+        _extends = 0;
+
+        //Reinitialize values to false
+        _voteActive = false;
+        _wasRtv = false;
+        _canRtv = false;
+        _mapVoteTimer?.Kill();
+        _mapVoteTimer = null;
+        _rtvDelayTimer?.Kill();
+        _rtvDelayTimer = null;
+    }
+    #endregion
 
     private void SetupTimeLimitCountDown()
     {
@@ -335,13 +190,14 @@ public class MapChooser : BasePlugin
 
         if (timeLimitConVar.GetPrimitiveValue<float>() <= 0.1) return;
         
-        Console.WriteLine($"Setting rtv delay to {_config.RtvDelay * 60f} {_config.RtvDelay}");
+        Logger.LogInformation($"Setting rtv delay to {_config.RtvDelay * 60f} {_config.RtvDelay}");
+        _rtvDelayTimer?.Kill();
         if (_config.RtvDelay < 0.1f)
         {
             _canRtv = true;
         }
         else
-            AddTimer(_config.RtvDelay * 60f, () =>
+            _rtvDelayTimer = AddTimer(_config.RtvDelay * 60f, () =>
             {
                 Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
                 _canRtv = true;
@@ -349,8 +205,10 @@ public class MapChooser : BasePlugin
 
         _startTime = Server.CurrentTime;
         _mapVoteTimer= AddTimer((timeLimitConVar.GetPrimitiveValue<float>() * 60f) - (_config.VoteStartTime * 60f),  StartMapVote, TimerFlags.STOP_ON_MAPCHANGE);
+        Logger.LogInformation("Setting map vote timer to " + ((timeLimitConVar.GetPrimitiveValue<float>() * 60f) - (_config.VoteStartTime * 60f)));
     }
-
+    
+    #region Vote
     private void StartMapVote()
     {
         _voteActive = true;
@@ -454,20 +312,40 @@ public class MapChooser : BasePlugin
         }
         
 
-        AddTimer(Math.Min(_config.VoteDuration, 60f), OnVoteFinished, TimerFlags.STOP_ON_MAPCHANGE);
-    }
-
-    private static CCSGameRules GetGameRules()
-    {
-        return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
+        _mapVoteTimer = AddTimer(Math.Min(_config.VoteDuration, 60f), OnVoteFinished, TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     private void OnVoteFinished()
     {
         _voteActive = false;
+        _mapVoteTimer?.Kill();
         if (_totalVotes == 0)
         {
-            ChooseRandomNextMap();
+            if (_wasRtv)
+            {
+                _wasRtv = false;
+                _rtvDelayTimer?.Kill();
+                _rtvDelayTimer = AddTimer(_config.RtvDelay * 60f, () =>
+                {
+                    Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
+                    _canRtv = true;
+                }, TimerFlags.STOP_ON_MAPCHANGE);
+                return;
+            }
+            var nextMap = new List<string>(_maps);
+            if (!_config.IncludeCurrent) nextMap.Remove("ws:"+Server.MapName);
+            var random = new Random();
+            if (_config.ExcludeMaps > 0)
+            {
+                nextMap = nextMap.Where(map => !_mapHistory.Contains(map.Replace("ws:", "").Trim()) && !_nominations.Values.Contains(map.Replace("ws:", "").Trim())).ToList();
+            }
+            _nextMap = nextMap.ElementAt(random.Next(0, nextMap.Count - 1)).Replace("ws:", "");
+            Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.map_won", _nextMap]}");
+            if(_config.EnforceTimeLimit)
+            {
+                _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - _config.VoteDuration,
+                    () => { Logger.LogInformation("Ending round, no votes"); GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw); }, TimerFlags.STOP_ON_MAPCHANGE);
+            }
             return;
         }
         var winner = "";
@@ -500,12 +378,13 @@ public class MapChooser : BasePlugin
                         Server.ExecuteCommand($"ds_workshop_changelevel {winner}");
                     else
                         Server.ExecuteCommand($"changelevel {winner}");
-                });
+                }, TimerFlags.STOP_ON_MAPCHANGE);
             }
             else
             {
                 _canRtv = false;
-                AddTimer(_config.RtvDelay * 60f, () =>
+                _rtvDelayTimer?.Kill();
+                _rtvDelayTimer = AddTimer(_config.RtvDelay * 60f, () =>
                 {
                     Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
                     _canRtv = true;
@@ -524,13 +403,19 @@ public class MapChooser : BasePlugin
                 {
                     Logger.LogInformation($"Setting mp_timelimit to {timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep}");
                     timeLimitConVar.SetValue(timeLimitConVar.GetPrimitiveValue<float>() + _config.ExtendTimeStep);
+                    if(timeLimitConVar.GetPrimitiveValue<float>() > 0f)
+                        _mapVoteTimer = AddTimer((_config.ExtendTimeStep * 60f) + (60 - Math.Min(_config.VoteDuration, 60f)), StartMapVote,
+                            TimerFlags.STOP_ON_MAPCHANGE);
+                    
+                    Logger.LogInformation(
+                        $"Setting next map vote time to {(_config.ExtendTimeStep * 60f) + (60 - Math.Min(_config.VoteDuration, 60f))}");
                 }
+
                 _extends++;
-                Logger.LogInformation($"Setting next map vote time to {(_config.ExtendTimeStep * 60f) + (60 - Math.Min(_config.VoteDuration, 60f))}");
-                _mapVoteTimer = AddTimer((_config.ExtendTimeStep * 60f) + (60 - Math.Min(_config.VoteDuration, 60f)), StartMapVote,
-                    TimerFlags.STOP_ON_MAPCHANGE);
+                
                 _canRtv = false;
-                AddTimer(_config.RtvDelay * 60f, () =>
+                _rtvDelayTimer?.Kill();
+                _rtvDelayTimer = AddTimer(_config.RtvDelay * 60f, () =>
                 {
                     Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
                     _canRtv = true;
@@ -541,10 +426,16 @@ public class MapChooser : BasePlugin
                 _nextMap = winner;
                 if(_config.EnforceTimeLimit)
                 {
+                    Logger.LogInformation($"Creating timer for timelimit enforcer {_config.VoteStartTime * 60f - Math.Min(_config.VoteDuration, 60f)} seconds");
                     _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - Math.Min(_config.VoteDuration, 60f), () =>
                     {
-                        var restartDelay =ConVar.Find("mp_round_restart_delay")?.GetPrimitiveValue<float>() ?? 5f;
-                        GetGameRules().TerminateRound(restartDelay, RoundEndReason.RoundDraw);
+                        Logger.LogInformation("Ending map due to time limit being reached.");
+                        var restartDelay = ConVar.Find("mp_match_restart_delay")?.GetPrimitiveValue<int>() ?? 5;
+                        Server.ExecuteCommand("mp_timelimit 1");
+                        _fixSwitchMapTimer = AddTimer(7.0f, SwitchMap, TimerFlags.STOP_ON_MAPCHANGE);
+                        Server.NextFrame(()=> { Logger.LogInformation("Ending round, next map vote over");
+                            GetGameRules().TerminateRound(restartDelay, RoundEndReason.RoundDraw);
+                        });
                     }, TimerFlags.STOP_ON_MAPCHANGE);
                 }
             }
@@ -555,95 +446,29 @@ public class MapChooser : BasePlugin
         _nominations.Clear();
         _totalVotes = 0;
     }
-
-    private void ChooseRandomNextMap()
+    #endregion
+    
+    
+    #region Helpers
+    private static CCSGameRules GetGameRules()
     {
-        if (_wasRtv)
-        {
-            _wasRtv = false;
-            AddTimer(_config.RtvDelay * 60f, () =>
-            {
-                Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.rtv_enabled"]}");
-                _canRtv = true;
-            }, TimerFlags.STOP_ON_MAPCHANGE);
-            return;
-        }
-        var nextMap = new List<string>(_maps);
-        if (!_config.IncludeCurrent) nextMap.Remove("ws:"+Server.MapName);
-        var random = new Random();
-        if (_config.ExcludeMaps > 0)
-        {
-            nextMap = nextMap.Where(map => !_mapHistory.Contains(map.Replace("ws:", "").Trim()) && !_nominations.Values.Contains(map.Replace("ws:", "").Trim())).ToList();
-        }
-        _nextMap = nextMap.ElementAt(random.Next(0, nextMap.Count - 1)).Replace("ws:", "");
-        Server.PrintToChatAll($"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.map_won", _nextMap]}");
-        if(_config.EnforceTimeLimit)
-        {
-            _mapVoteTimer = AddTimer((_config.VoteStartTime * 60f) - _config.VoteDuration,
-                () => { GetGameRules().TerminateRound(5.0f, RoundEndReason.RoundDraw); }, TimerFlags.STOP_ON_MAPCHANGE);
-        }
+        return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
     }
-
-    private void OnMapStart(string mapName)
+    
+    private void SwitchMap()
     {
-        var json = File.ReadAllText(_configPath);
-        _config = JsonSerializer.Deserialize<Config>(json);
-
-        _maps = new List<string>(File.ReadLines(_mapsPath));
-        if (_mapHistory.Count > _config.ExcludeMaps)
-            _mapHistory.RemoveAt(0);
-    }
-
-    public HookResult OnMatchEndEvent(EventCsWinPanelMatch @event, GameEventInfo info)
-    {
-        var convar = ConVar.Find("mp_match_restart_delay");
-        if (convar is null)
-        {
-            if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
-                Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
-            else
-                Server.ExecuteCommand($"changelevel {_nextMap}");
-        }
+        Logger.LogInformation($"Switching map to {_nextMap}");
+        if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
+            Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
         else
-        {
-            var delay = convar.GetPrimitiveValue<int>();
-            AddTimer(Math.Max(0, delay), () =>
-            {
-                if (_maps.Any(map => map.Trim() == "ws:" + _nextMap))
-                    Server.ExecuteCommand($"ds_workshop_changelevel {_nextMap}");
-                else
-                    Server.ExecuteCommand($"changelevel {_nextMap}");
-            });
-        }
-        return HookResult.Continue;
+            Server.ExecuteCommand($"changelevel {_nextMap}");
     }
-
-    private void OnMapEnd()
+    
+    private int GetOnlinePlayerCount(bool countSpec = false)
     {
-        _nextMap = "";
-        //Add the current map to map history
-        _mapHistory.Add(Server.MapName);
-
-        //Clear the various lists/dictionaries
-        _nominations.Clear();
-        _maps.Clear();
-        _playerVotes.Clear();
-        _votes.Clear();
-        _rtvCount.Clear();
-
-        //Set mp_timelimit convar handler to null
-        // _timeLimitConVar = null;
-
-        //Reinitialize values to 0
-        _startTime = 0;
-        _totalVotes = 0;
-        _extends = 0;
-
-        //Reinitialize values to false
-        _voteActive = false;
-        _wasRtv = false;
-        _canRtv = false;
-        _mapVoteTimer?.Kill();
-        _mapVoteTimer = null;
+        var players = Utilities.GetPlayers().Where((player) => player is {IsValid: true, Connected: PlayerConnectedState.PlayerConnected, IsBot: false, IsHLTV: false});
+        if (!countSpec) players = players.Where((player) => player.TeamNum > 1);
+        return players.Count();
     }
+    #endregion
 }

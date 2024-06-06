@@ -10,6 +10,7 @@
   "mapchooser.nominate_current_map": "{0} - Current Map",
   "mapchooser.nominate_recent": "{0} - Recently Played",
   "mapchooser.nominate_nominated": "{0} - Already Nominated",
+  "mapchooser.nominate_ambiguous": "{0} is ambiguous.",
   "mapchooser.vote_header": "Map Vote - Type !# to vote",
   "mapchooser.option_dont_change": "Don't Change",
   "mapchooser.option_extend": "Extend",
