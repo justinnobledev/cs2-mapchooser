@@ -104,7 +104,7 @@ public partial class  MapChooser
         if (!_rtvCount.Contains(player.SteamID)) return;
         _rtvCount.Remove(player.SteamID);
         Server.PrintToChatAll(
-            $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.unrtv", player.PlayerName, _rtvCount.Count, GetOnlinePlayerCount()]}");
+            $"{Localizer["mapchooser.prefix"]} {Localizer["mapchooser.unrtv", player.PlayerName, _rtvCount.Count, (int)Math.Ceiling(GetOnlinePlayerCount() * _config.RtvPercent)]}");
     }
     
     [ConsoleCommand("css_nominate", "Puts up a map to be in the next vote")]
